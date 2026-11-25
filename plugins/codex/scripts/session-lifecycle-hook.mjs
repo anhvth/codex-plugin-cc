@@ -14,6 +14,7 @@ import {
   teardownBrokerSession
 } from "./lib/broker-lifecycle.mjs";
 import { loadState, resolveStateFile, saveState } from "./lib/state.mjs";
+import { listProfileDataDirs } from "./lib/profiles.mjs";
 import { TRANSCRIPT_PATH_ENV } from "./lib/claude-session-transfer.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
 
@@ -81,10 +82,28 @@ function handleSessionStart(input) {
 }
 
 async function handleSessionEnd(input) {
+  await cleanupSessionRuntime(input);
+  const dataRoot = process.env[PLUGIN_DATA_ENV];
+  if (!dataRoot) {
+    return;
+  }
+  // Profiles keep their brokers and jobs under their own plugin data dirs.
+  for (const profileDataDir of listProfileDataDirs(dataRoot)) {
+    process.env[PLUGIN_DATA_ENV] = profileDataDir;
+    try {
+      await cleanupSessionRuntime(input, { useEnvBroker: false });
+    } catch (error) {
+      process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    }
+  }
+  process.env[PLUGIN_DATA_ENV] = dataRoot;
+}
+
+async function cleanupSessionRuntime(input, { useEnvBroker = true } = {}) {
   const cwd = input.cwd || process.cwd();
   const brokerSession =
     loadBrokerSession(cwd) ??
-    (process.env[BROKER_ENDPOINT_ENV]
+    (useEnvBroker && process.env[BROKER_ENDPOINT_ENV]
       ? {
           endpoint: process.env[BROKER_ENDPOINT_ENV],
           pidFile: process.env[PID_FILE_ENV] ?? null,

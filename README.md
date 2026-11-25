@@ -236,6 +236,27 @@ When the review gate is enabled, the plugin uses a `Stop` hook to run a targeted
 > [!WARNING]
 > The review gate can create a long-running Claude/Codex loop and may drain usage limits quickly. Only enable it when you plan to actively monitor the session.
 
+### Model profiles (fork addition)
+
+A profile runs Codex with a different `CODEX_HOME`, provider or model without changing your default `~/.codex` setup. Define profiles in `~/.config/codex-plugin-cc/profiles.json` (or the file named by `$CODEX_PROFILES_FILE`); see [`profiles.example.json`](./profiles.example.json).
+
+| Key | Effect |
+| --- | --- |
+| `codex_home` | Sets `CODEX_HOME` for Codex. `~` is expanded. |
+| `env` | Literal environment variables. |
+| `env_files` | Environment variables read from files, such as API keys. The values are never printed. |
+| `config` | Codex config overrides passed as `codex app-server -c key=value`, for example `model_provider` and `model`. |
+
+Every command accepts `--profile <name>`:
+
+```bash
+/codex:rescue --profile alibaba investigate why the export drops the last turn
+/codex:status --profile alibaba
+/codex:setup --profile local
+```
+
+Each profile keeps its own shared runtime and job list under `$CLAUDE_PLUGIN_DATA/profiles/<name>/`, so `status`, `result`, `cancel` and `--resume` need the same `--profile`. A per-request `--model` still overrides the profile's model. Without `--profile`, the plugin behaves exactly like upstream.
+
 ## Typical Flows
 
 ### Review Before Shipping

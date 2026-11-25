@@ -1,0 +1,12 @@
+{
+  "alibaba": {
+    "codex_home": "~/.codex/cdx-33",
+    "env_files": { "CDX33_API_KEY": "~/.config/claude-alibaba/token" },
+    "config": { "model_provider": "alibaba-direct", "model": "qwen4-max" }
+  },
+  "local": {
+    "codex_home": "~/.codex/cdx-33",
+    "env": { "CDX33_API_KEY": "local-vllm" },
+    "config": { "model_provider": "local-vllm", "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017" }
+  }
+}

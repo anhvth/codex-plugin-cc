@@ -53,6 +53,7 @@ import {
   SESSION_ID_ENV
 } from "./lib/tracked-jobs.mjs";
 import { resolveWorkspaceRoot } from "./lib/workspace.mjs";
+import { applyProfile, extractProfileArg } from "./lib/profiles.mjs";
 import {
   renderNativeReviewResult,
   renderReviewResult,
@@ -83,7 +84,10 @@ function printUsage() {
       "  node scripts/codex-companion.mjs transfer [--source <claude-jsonl>] [--json]",
       "  node scripts/codex-companion.mjs status [job-id] [--all] [--json]",
       "  node scripts/codex-companion.mjs result [job-id] [--json]",
-      "  node scripts/codex-companion.mjs cancel [job-id] [--json]"
+      "  node scripts/codex-companion.mjs cancel [job-id] [--json]",
+      "",
+      "Every subcommand accepts --profile <name> to use a model profile from",
+      "~/.config/codex-plugin-cc/profiles.json (or $CODEX_PROFILES_FILE)."
     ].join("\n")
   );
 }
@@ -1022,10 +1026,16 @@ async function handleCancel(argv) {
 }
 
 async function main() {
-  const [subcommand, ...argv] = process.argv.slice(2);
+  const [subcommand, ...rawArgv] = process.argv.slice(2);
   if (!subcommand || subcommand === "help" || subcommand === "--help") {
     printUsage();
     return;
+  }
+  // Slash commands may pass all flags as one quoted string; split it only when it carries --profile.
+  const profileArgv = rawArgv.length === 1 && /(^|\s)--profile(=|\s)/.test(rawArgv[0]) ? normalizeArgv(rawArgv) : rawArgv;
+  const { name: profile, argv } = extractProfileArg(profileArgv);
+  if (profile) {
+    applyProfile(profile);
   }
 
   switch (subcommand) {
